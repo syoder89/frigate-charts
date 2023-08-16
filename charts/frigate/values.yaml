@@ -161,7 +161,7 @@ ingress:
   #      - chart-example.local
 
 persistence:
-  data:
+  media:
     # -- Enables persistence for the data directory
     enabled: false
     ## frigate data Persistent Volume Storage Class
