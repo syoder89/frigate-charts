@@ -53,9 +53,12 @@ spec:
             - name: rtsp
               containerPort: 8554
               protocol: TCP
-            - name: webrtc
+            - name: webrtctcp
               containerPort: 8555
               protocol: TCP
+            - name: webrtcudp
+              containerPort: 8555
+              protocol: UDP
           {{- if .Values.probes.liveness.enabled }}
           livenessProbe:
             httpGet:
@@ -92,6 +95,8 @@ spec:
             - name: NVIDIA_VISIBLE_DEVICES
               value: "all"
             {{- end }}
+            - name: CONFIG_FILE
+              value: "/static-config/config.yml"
             {{- range $key, $value := .Values.env }}
             - name: {{ $key }}
               value: {{ $value | quote }}
@@ -108,6 +113,8 @@ spec:
             {{- end }}
             - mountPath: /config
               name: config
+            - mountPath: /static-config
+              name: config-yml
             - mountPath: /media
               name: media
             - name: dshm
@@ -122,9 +129,16 @@ spec:
             {{- toYaml .Values.resources | nindent 12 }}
             {{- end }}
       volumes:
-        - name: config
+        - name: config-yml
           configMap:
             name: {{ template "frigate.fullname" . }}
+        - name: config
+        {{- if .Values.persistence.config.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ if .Values.persistence.config.existingClaim }}{{ .Values.persistence.config.existingClaim }}{{- else }}{{ template "frigate.fullname" . }}-config{{- end }}
+        {{- else }}
+          emptyDir: {}
+        {{- end }}
         {{- if .Values.coral.enabled }}
         - name: coral-dev
           hostPath:
