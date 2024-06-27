@@ -33,6 +33,15 @@ spec:
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
     {{- end }}
+      initContainers:
+        - name: copy-config
+          image: busybox:1.28
+          command: ["/bin/sh", "-c", "mv /config/config.yml /config/config.yml.old; cat /static-config/config.yml > /config/config.yml"]
+          volumeMounts:
+           - mountPath: /config
+             name: config
+           - mountPath: /static-config
+             name: config-yml
       containers:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ include "frigate.imageTag" . }}"
@@ -96,7 +105,7 @@ spec:
               value: "all"
             {{- end }}
             - name: CONFIG_FILE
-              value: "/static-config/config.yml"
+              value: "/config/config.yml"
             {{- range $key, $value := .Values.env }}
             - name: {{ $key }}
               value: {{ $value | quote }}
@@ -113,8 +122,6 @@ spec:
             {{- end }}
             - mountPath: /config
               name: config
-            - mountPath: /static-config
-              name: config-yml
             - mountPath: /media
               name: media
             - name: dshm
